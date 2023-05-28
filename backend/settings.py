@@ -135,8 +135,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    BASE_DIR/"dist",
-    BASE_DIR/"public",
+    BASE_DIR/"frontend"/"dist",
+    BASE_DIR/"frontend"/"public",
 ]
 
 STATIC_ROOT = BASE_DIR / "static"
@@ -157,6 +157,7 @@ CORS_ORIGIN_WHITELIST = (
 CORS_ORIGIN_ALLOW_ALL = True
 
 INTERNAL_IPS = [
+
     'localhost',
     '127.0.0.1',
 ]
