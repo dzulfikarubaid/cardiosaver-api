@@ -157,7 +157,6 @@ CORS_ORIGIN_WHITELIST = (
 CORS_ORIGIN_ALLOW_ALL = True
 
 INTERNAL_IPS = [
-
     'localhost',
     '127.0.0.1',
 ]
