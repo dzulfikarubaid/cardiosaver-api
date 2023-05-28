@@ -150,12 +150,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'api.User'
 
 CORS_ORIGIN_WHITELIST = (
+'https://nitipin.vercel.app',
 'http://localhost:5173',
 'http://localhost:8000',
 )
 CORS_ORIGIN_ALLOW_ALL = True
 
 INTERNAL_IPS = [
+
     'localhost',
     '127.0.0.1',
 ]
@@ -163,5 +165,6 @@ CRSF_COOKIE_NAME = "csrftoken"
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
 'http://localhost:8000',
+'https://nitipin.vercel.app'
 ]
 CSRF_COOKIE_HTTPONLY = False
