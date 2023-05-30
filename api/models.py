@@ -15,7 +15,7 @@ class User(AbstractUser):
         return self.name
 
 class Post(models.Model):
-    id_post = models.AutoField(primary_key=True)
+    id_post = models.AutoField(primary_key=True, unique=True)
     nama_item = models.CharField(max_length=50)
     perkiraan_harga_item = models.IntegerField()
     biaya_titip = models.IntegerField()
@@ -26,3 +26,9 @@ class Post(models.Model):
 
     def __str__(self):
         return self.nitiper + ' ' + self.nama_item
+
+class Interaction(models.Model):
+    id_interaction = models.AutoField(primary_key=True, unique=True)
+    nitiper = models.ForeignKey(User, on_delete=models.CASCADE)
+    respons = models.ForeignKey(Post, on_delete=models.CASCADE)
+    sender = models.CharField()

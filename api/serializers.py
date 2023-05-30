@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Post
+from .models import User, Post, Interaction
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -29,3 +29,16 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ['id_post', 'nama_item', 'perkiraan_harga_item', 'biaya_titip', 'alamat_nitiper', 'alamat_pembelian', 'nitiper']
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    class Meta:
+        model = User
+        fields = ['name', 'email']
+       
+
+class InteractionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Interaction
+        fields ='__all__'

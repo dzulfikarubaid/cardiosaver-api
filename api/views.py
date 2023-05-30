@@ -2,8 +2,8 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from .serializers import UserSerializer, PostSerializer
-from .models import User, Post
+from .serializers import UserSerializer, PostSerializer, UpdateUserSerializer, InteractionSerializer
+from .models import User, Post, Interaction
 import jwt, datetime
 import requests
 # Create your views here.
@@ -11,6 +11,52 @@ import requests
 def index(request):
     return render(request, 'base.html')
 
+
+@api_view(['GET'])
+def ApplyList(request,id):
+    try:
+        apply = list(Interaction.objects.filter(nitiper=id))
+    except Interaction.DoesNotExist:
+        status = {'status':'data tidak ditemukan'}
+        return Response(status)
+    serializer = InteractionSerializer(apply, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+def Apply(request):
+    serializer = InteractionSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors)
+@api_view(['PUT'])
+def Profile(request, id):
+    name = request.data['name']
+    user = User.objects.filter(name=name).first()
+    try:
+        ModelObject = User.objects.get(id=id)
+    except:
+        status = {'status':'data tidak ditemukan'}
+        return Response(status)
+    serializer = UpdateUserSerializer(ModelObject, data=request.data)
+    
+    if serializer.is_valid():
+        serializer.save()
+        payload = {
+        'id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'password': user.password,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+        'iat': datetime.datetime.utcnow()
+        }
+        token = jwt.encode(payload, 'secret', algorithm='HS256')
+        response = Response()
+        response.data = {
+            'jwt': token
+        }
+        return response
+    return Response(serializer.errors)
 @api_view(['GET'])
 def ViewPost(request):
     posts = Post.objects.all()
@@ -74,6 +120,7 @@ def Login(request):
         'id': user.id,
         'name': user.name,
         'email': user.email,
+        'password': user.password,
         'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
         'iat': datetime.datetime.utcnow()
     }
