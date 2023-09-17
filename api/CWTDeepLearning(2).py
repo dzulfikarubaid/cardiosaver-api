@@ -1,35 +1,11 @@
-from django.shortcuts import render
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework.exceptions import AuthenticationFailed
-from .serializers import UserSerializer, AnswerSerializer
-from .models import User, Answer
-import jwt, datetime
-import requests
-from rest_framework import status
-import pyrebase
-from scipy.signal import butter, filtfilt, iirnotch
-from decouple import config
-import requests
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+import numpy as np
 import math
 import matplotlib.pyplot as plt
-import os
+from scipy.signal import butter, filtfilt, iirnotch
 
-config={
-    "apiKey": config("FIREBASE_API_KEY2"),
-    "authDomain": config("FIREBASE_AUTH_DOMAIN2"),
-    "databaseURL": config("FIREBASE_DATABASE_URL2"),
-    "projectId": config("FIREBASE_PROJECT_ID2"),
-    "storageBucket": config("FIREBASE_STORAGE_BUCKET2"),
-    "messagingSenderId": config("FIREBASE_MESSAGING_SENDER_ID2"),
-    "appId": config("FIREBASE_APP_ID2")
-}
-firebase=pyrebase.initialize_app(config)
-authe = firebase.auth()
-database=firebase.database()
 row = 100
 column = 100
 
@@ -127,8 +103,10 @@ def classify_risk(prediction_value):
         return "Unknown"  # Handle unexpected values
 
 # penggunaan:
-def process_data_file(signal, parameter):
-    
+def process_data_file(file_index):
+    file_name = f"C:/Users/ASUS/OneDrive/Documents/Kuliahh/Lomba/PKM/PKM 2023/PKM KC/Data/Data Normal/16265/data_bagian_{file_index}.csv"
+    signal = read_data_from_file(file_name)
+
     if signal is not None:
         a0 = 0.0001
         b0 = 0
@@ -145,7 +123,7 @@ def process_data_file(signal, parameter):
         cwt_result = cwt(notch_filtered_signal, morlet_complex, a0, b0, da)
 
         # Simpan hasil CWT sebagai gambar
-        output_image_path = f"./result_{parameter}.png"
+        output_image_path = f"C:/Users/ASUS/OneDrive/Documents/Kuliahh/Lomba/PKM/PKM 2023/PKM KC/Contoh/CWT_16265_{file_index}.png"
         plt.imshow(cwt_result, aspect='auto', extent=[0, 10, 1, 100])
         plt.title('Continuous Wavelet Transform (CWT)')
         plt.xlabel('Waktu (detik)')
@@ -174,97 +152,7 @@ def process_data_file(signal, parameter):
         risk_category = classify_risk(predictions[0])
 
         # Print the risk category
-        return predictions[0], risk_category
+        print(f"Prediction: {predictions[0]}, Risiko: {risk_category}")
 
-
-
-def result(q1,q2,q3,q4,q5):
-    if q1 == 'A':
-        q1 = 20
-    else:
-        q1 = 0
-    if q2 == 'A':
-        q2 = 20
-    else:
-        q2 = 0
-    if q3 == 'A':
-        q3 = 20
-    else:
-        q3 = 0
-    if q4 == 'A':
-        q4 = 20
-    else:
-        q4 = 0
-    if q5 == 'A':
-        q5 = 20
-    else:
-        q5 = 0
-    
-    return q1+q2+q3+q4+q5
-@api_view(['GET'])
-def data(request):
-    value = database.child('test').child('int').get().val().values()
-    return Response(value)
-@api_view(['GET'])
-def data_result(request):
-    result_tuple = process_data_file(list(database.child('test').child('int').get().val().values()), 'test')  # Panggil fungsi dan simpan hasilnya dalam tuple
-    predictions = str(result_tuple[0])  # Ambil nilai pertama dari tuple (predictions)
-    risk_cat = str(result_tuple[1])  # Ambil nilai kedua dari tuple (risk_cat)
-    return Response({
-        'predictions': predictions,  # Gunakan nama string sebagai kunci
-        'risk_cat': risk_cat
-    })
-
-@api_view(['POST'])
-def Register(request):
-    serializer = UserSerializer(data=request.data)
-    password = request.data['password']
-    c_password = request.data['c_password']
-    if password != c_password:
-        raise AuthenticationFailed('Passwords do not match!')
-    if serializer.is_valid(raise_exception=True):
-        serializer.save()
-    return Response(serializer.data)
-
-@api_view(['POST'])
-def Login(request):
-    email = request.data['email']
-    password = request.data['password']
-    user = User.objects.filter(email=email).first()
-
-    if email == '' or password == '':
-        raise AuthenticationFailed('Please provide email and password!')
-    if user is None:
-        raise AuthenticationFailed('User not found!')
-    if not user.check_password(password):
-        raise AuthenticationFailed('Incorrect password!')
-    payload = {
-        'id': user.id,
-        'name': user.name,
-        'email': user.email,
-        'password': user.password,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
-        'iat': datetime.datetime.utcnow()
-    }
-    token = jwt.encode(payload, 'secret', algorithm='HS256')
-    response = Response()
-    response.set_cookie(key='jwt', value=token, httponly=True)
-    response.data = {
-        'jwt': token
-    }
-    return response
-
-@api_view(['POST'])
-def create_answer(request):
-    serializer = AnswerSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        q1 = serializer.data['q1']
-        q2 = serializer.data['q2']
-        q3 = serializer.data['q3']
-        q4 = serializer.data['q4']
-        q5 = serializer.data['q5']
-        answer_result = result(q1,q2,q3,q4,q5)
-        
-        return Response(answer_result, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# Panggil fungsi untuk memproses data file
+process_data_file(1)
