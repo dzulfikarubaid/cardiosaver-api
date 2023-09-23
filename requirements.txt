@@ -40,6 +40,7 @@ opt-einsum==3.3.0
 packaging==23.1
 Pillow==10.0.0
 protobuf==4.24.2
+psycopg2-binary
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
 pycparser==2.21
@@ -62,7 +63,7 @@ tensorboard==2.13.0
 tensorboard-data-server==0.7.1
 tensorflow==2.13.0
 tensorflow-estimator==2.13.0
-tensorflow-intel
+tensorflow-intel==2.13.0
 tensorflow-io-gcs-filesystem==0.31.0
 termcolor==2.3.0
 typing_extensions==4.5.0

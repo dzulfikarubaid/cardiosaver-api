@@ -5,6 +5,8 @@ from rest_framework.exceptions import AuthenticationFailed
 from .serializers import UserSerializer, AnswerSerializer
 from .models import User, Answer
 import jwt, datetime
+from rest_framework import status
+from rest_framework.views import exception_handler
 import requests
 from rest_framework import status
 import pyrebase
@@ -17,7 +19,8 @@ from tensorflow.keras.models import load_model
 import math
 import matplotlib.pyplot as plt
 import os
-
+import firebase_admin
+from firebase_admin import credentials, firestore
 config={
     "apiKey": config("FIREBASE_API_KEY2"),
     "authDomain": config("FIREBASE_AUTH_DOMAIN2"),
@@ -27,8 +30,12 @@ config={
     "messagingSenderId": config("FIREBASE_MESSAGING_SENDER_ID2"),
     "appId": config("FIREBASE_APP_ID2")
 }
+cred = credentials.Certificate("./firebase_config.json")
+default_app = firebase_admin.initialize_app(cred)
+
 firebase=pyrebase.initialize_app(config)
-authe = firebase.auth()
+auth = firebase.auth()
+firestore = firestore.client()
 database=firebase.database()
 row = 100
 column = 100
@@ -81,7 +88,7 @@ def cwt(signal, wavelet, a0, b0, da):
         fk = fc / (a0 + i * da)
         j = i
         tk = (ndata - 1) / column * j * dt
-        print(f'skala[{i}] = {fk} Hz, waktu[{j}] = {tk} s')
+        # print(f'skala[{i}] = {fk} Hz, waktu[{j}] = {tk} s')
     return cwt
 
 def morlet_complex(t, a, b, w0):
@@ -205,15 +212,30 @@ def result(q1,q2,q3,q4,q5):
 def data(request):
     value = database.child('test').child('int').get().val().values()
     return Response(value)
+
 @api_view(['GET'])
-def data_result(request):
-    result_tuple = process_data_file(list(database.child('test').child('int').get().val().values()), 'test')  # Panggil fungsi dan simpan hasilnya dalam tuple
-    predictions = str(result_tuple[0])  # Ambil nilai pertama dari tuple (predictions)
-    risk_cat = str(result_tuple[1])  # Ambil nilai kedua dari tuple (risk_cat)
-    return Response({
-        'predictions': predictions,  # Gunakan nama string sebagai kunci
-        'risk_cat': risk_cat
-    })
+def data_result(request, id):
+    try:
+        data_ref = firestore.collection('heart_rate').document(id).get()
+        data = data_ref.to_dict()
+
+        if not data:
+            return Response({'message': 'Data not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        result_tuple = process_data_file(list(data["amplitude"]), id)
+        predictions = str(result_tuple[0])
+        risk_cat = str(result_tuple[1])
+        data_to_send = {
+            "predictions": predictions,
+            "risk_cat": risk_cat
+        }
+        firestore.collection("heart_rate").document(id).set(data_to_send, merge=True)
+        response_data = {
+            'message': 'Data successfully sent to Firestore with uid: {}'.format(id)
+        }
+        return Response(response_data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 def Register(request):
