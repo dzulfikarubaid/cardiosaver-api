@@ -9,7 +9,6 @@ from rest_framework import status
 from rest_framework.views import exception_handler
 import requests
 from rest_framework import status
-import pyrebase
 from scipy.signal import butter, filtfilt, iirnotch
 from decouple import config
 import requests
@@ -21,22 +20,12 @@ import matplotlib.pyplot as plt
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore
-config={
-    "apiKey": config("FIREBASE_API_KEY2"),
-    "authDomain": config("FIREBASE_AUTH_DOMAIN2"),
-    "databaseURL": config("FIREBASE_DATABASE_URL2"),
-    "projectId": config("FIREBASE_PROJECT_ID2"),
-    "storageBucket": config("FIREBASE_STORAGE_BUCKET2"),
-    "messagingSenderId": config("FIREBASE_MESSAGING_SENDER_ID2"),
-    "appId": config("FIREBASE_APP_ID2")
-}
+
 cred = credentials.Certificate("./firebase_config.json")
 default_app = firebase_admin.initialize_app(cred)
 
-firebase=pyrebase.initialize_app(config)
-auth = firebase.auth()
+
 firestore = firestore.client()
-database=firebase.database()
 row = 100
 column = 100
 
@@ -209,8 +198,9 @@ def result(q1,q2,q3,q4,q5):
     
     return q1+q2+q3+q4+q5
 @api_view(['GET'])
-def data(request):
-    value = database.child('test').child('int').get().val().values()
+def data(request,id):
+    value = list(firestore.collection('heart_rate').document(id).get().to_dict()["amplitude"])
+    print(value)
     return Response(value)
 
 @api_view(['GET'])
