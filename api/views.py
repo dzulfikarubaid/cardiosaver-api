@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.views import exception_handler
 import requests
 from rest_framework import status
-from scipy.signal import butter, filtfilt, iirnotch
+from scipy.signal import butter, filtfilt, iirnotch, find_peaks
 from decouple import config
 import requests
 import numpy as np
@@ -28,6 +28,7 @@ default_app = firebase_admin.initialize_app(cred)
 firestore = firestore.client()
 row = 100
 column = 100
+
 
 def read_data_from_file(file_path):
     try:
@@ -197,6 +198,40 @@ def result(q1,q2,q3,q4,q5):
         q5 = 0
     
     return q1+q2+q3+q4+q5
+
+def get_bpm_rr(data):
+    ekg_signal= np.array(data)
+# Sampling frequency (gantilah sesuai dengan frekuensi sampling data Anda)
+    fs = 100 # Contoh: 1000 Hz
+
+    # Time vector
+    t = np.arange(0, len(ekg_signal)) / fs
+
+    # Find R-peaks using a peak detection algorithm (you can adjust parameters)
+    peaks, _ = find_peaks(ekg_signal, height=0.05, distance=0.6*fs)
+
+    # Calculate heart rate based on intervals between R-peaks
+    tt = 1.0 / fs  # Faktor konversi waktu
+    interval = np.diff(peaks) * tt  # Menghitung interval antara puncak R
+    bpm = 60.0 / interval  # Menghitung denyut jantung berdasarkan interval
+
+    # # Plot the EKG signal with detected R-peaks
+    # plt.figure(figsize=(12, 6))
+    # plt.plot(t, ekg_signal, label='EKG Signal', color='b')
+    # plt.scatter(np.array(peaks)/fs, ekg_signal[peaks], color='r', marker='o', label='Detected R-Peaks')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Amplitude')
+    # plt.title('EKG Signal with R-Peak Detection')
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
+    mean_bpm = np.mean(bpm)
+    mean_interval = np.mean(interval)
+    print(f"Heart Rate: {np.mean(bpm):.2f} bpm")  # Menggunakan rata-rata denyut jantung dari interval
+    print(f"Interval RR: {np.mean(interval):.2f} sekon")
+
+    return mean_bpm, mean_interval
+
 @api_view(['GET'])
 def data(request,id):
     value = list(firestore.collection('heart_rate').document(id).get().to_dict()["amplitude"])
@@ -213,11 +248,16 @@ def data_result(request, id):
             return Response({'message': 'Data not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         result_tuple = process_data_file(list(data["amplitude"]), id)
+        rr_bpm = get_bpm_rr(list(data["amplitude"]))
         predictions = str(result_tuple[0])
         risk_cat = str(result_tuple[1])
+        bpm = str(rr_bpm[0])
+        interval = str(rr_bpm[1])
         data_to_send = {
             "predictions": predictions,
-            "risk_cat": risk_cat
+            "risk_cat": risk_cat,
+            "bpm": bpm,
+            "interval": interval
         }
         firestore.collection("heart_rate").document(id).set(data_to_send, merge=True)
         response_data = {
